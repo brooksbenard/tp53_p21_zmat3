@@ -45,9 +45,15 @@ invisible(lapply(packages, library, character.only = TRUE))
 options(scipen = 999)
 
 # make directories for data
-dir.create("~/Desktop/ZMAT3_CDKN1A_TP53/")
-dir.create("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data")
-dir.create("~/Desktop/ZMAT3_CDKN1A_TP53/results")
+dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53")
+dir.create(
+  "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data"
+)
+dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results")
+
+# dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/")
+# dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data")
+# dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results")
 
 
 # ======================== #
@@ -55,10 +61,12 @@ dir.create("~/Desktop/ZMAT3_CDKN1A_TP53/results")
 # ======================== #
 # download cell line information for DepMap lines (e.g. tissue of origin, mutations, etc.)
 # cell line mutation file
-download.file("https://ndownloader.figshare.com/files/27902118",
-              destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsSomaticMutations.csv")
+download.file("https:/ndownloader.figshare.com/files/27902118",
+              destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsSomaticMutations.csv")
 depmap_lines_mutations <-
-  read.csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsSomaticMutationsProfile.csv")
+  read.csv(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsSomaticMutationsProfile.csv"
+  )
 
 # select all TP53 mutations
 depmap_lines_mutations_tp53 <- depmap_lines_mutations |>
@@ -86,45 +94,49 @@ mut_status <- depmap_lines_mutations |>
   )
 
 # plot the distribution of mutated vs wt cell lines
-ggplot(mut_status, aes(x = tp53_status, fill = tp53_status)) +
+p1 <- ggplot(mut_status, aes(x = tp53_status, fill = tp53_status)) +
   geom_bar() +
-  scale_fill_manual(values = c("WT" = "#440154", "Mut" = "#fde725")) +
+  scale_fill_manual(values = c("WT" = "#b2182b", "Mut" = "#2166ac")) +
   theme_cowplot() +
   ylab("Number of cell lines") +
   xlab(NULL) +
   guides(fill = guide_legend(title = "TP53 status")) +
   labs(title = "All cell lines in DepMap\n(N = 2,320)") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  ggsave(
-    filename = "~/Desktop/ZMAT3_CDKN1A_TP53/results/cell_line_status.pdf",
-    dpi = 300,
-    width = 5,
-    height = 3.5,
-    units = "in"
-  )
+  theme(plot.title = element_text(hjust = 0.5))
+ggsave(
+  plot = p1,
+  filename = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/cell_line_status.pdf",
+  dpi = 300,
+  width = 5,
+  height = 3.5,
+  units = "in"
+)
 
 # add the cell line identifier using a different file
-download.file(url = "https://figshare.com/ndownloader/files/40449635",
-              destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
-depmap_cell_line_names = read_csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
+download.file(url = "https:/figshare.com/ndownloader/files/40449635",
+              destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
+depmap_cell_line_names = read_csv(
+  "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv"
+)
 
 depmap_lines_mutations_tp53 = left_join(depmap_lines_mutations_tp53, depmap_cell_line_names, by = "ProfileID")
 
+# remove unnecessary intermediates
+rm(depmap_lines_mutations)
 
 # ======================================================= #
 # Now integrate the copy number status for the p53 locus  #
 # ======================================================= #
 # download the cell line copy number file
 download.file(
-  "https://depmap.org/portal/download/all/?releasename=DepMap+Public+23Q2&filename=OmicsCNGene.csv",
-  destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsCNGene.csv"
+  "https:/depmap.org/portal/download/all/?releasename=DepMap+Public+23Q2&filename=OmicsCNGene.csv",
+  destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsCNGene.csv"
 )
-depmap_lines_cna <-
-  read.csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsCNGene.csv")
-
-# only select cell line names and the TP53 copy number info
-depmap_lines_cna_sub = depmap_lines_cna %>%
-  select(X, TP53..7157.) |>
+depmap_lines_cna_sub <-
+  read.csv(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsCNGene.csv"
+  ) |>
+  select(X, TP53..7157.) |> # only select cell line names and the TP53 copy number info
   set_colnames(c("ModelID", "TP53_CN"))
 
 # now, add the copy number data to the cell line mutation data
@@ -132,7 +144,7 @@ depmap_lines_mutations_cn_tp53 = full_join(depmap_lines_mutations_tp53, depmap_l
 
 # define cases with a deletion in tp53
 # No official answer from the DepMap team as far as I know, but I saw that
-# Mina et al, 2020 (https://pubmed.ncbi.nlm.nih.gov/32989323/ 24) used the following cutoffs for CN:
+# Mina et al, 2020 (https:/pubmed.ncbi.nlm.nih.gov/32989323/ 24) used the following cutoffs for CN:
 # Amp: CN > 2^0.75
 # Del: CN < 2^-1.2
 # where CN = 1 means diploid.
@@ -174,8 +186,8 @@ ggplot(cell_line_status,
   geom_bar() +
   scale_fill_manual(
     values = c(
-      "WT" = "#440154",
-      "Hotspot" = "#fde725",
+      "WT" = "#b2182b",
+      "Hotspot" = "#2166ac",
       "Deleterious" = "#a0da39",
       "Deletion" = "#1fa187",
       "Other" = "#277f8e"
@@ -188,11 +200,13 @@ ggplot(cell_line_status,
 # CRISPR gene effect data ####
 # ========================== #
 # download the CRONOS gene effect scores from the DepMap database
-download.file("https://figshare.com/ndownloader/files/40448555",
-              destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/CRISPRGeneEffect.csv")
+download.file("https:/figshare.com/ndownloader/files/40448555",
+              destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/CRISPRGeneEffect.csv")
 # Gene Effect data for each gene in each cell line
 depmap_crispr_effect <-
-  read.csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/CRISPRGeneEffect.csv")
+  read.csv(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/CRISPRGeneEffect.csv"
+  )
 
 # remove everything but the gene name from the column headers
 names(depmap_crispr_effect) <-
@@ -203,29 +217,32 @@ colnames(depmap_crispr_effect) <-
   make.unique(colnames(depmap_crispr_effect))
 
 # select zmat3 and cdkn1a phenotype columns and add the cell line mutation status
-depmap_crispr_sub <- depmap_crispr_effect |>
+depmap_crispr_effect_sub <- depmap_crispr_effect |>
   select(ModelID, ZMAT3, CDKN1A) |>
   mutate(tp53_status = case_when(ModelID %in% tp53_mut_lines$ModelID ~ "Mut",
                                  TRUE ~ "WT")) |>
   mutate(tp53_status = fct_relevel(tp53_status, c("WT", "Mut"))) |>
-  melt() # melt the dataframe in order to plot with facet_wrap()
+  reshape2::melt() # melt the dataframe in order to plot with facet_wrap()
 
 # plot distribution differences between gene effect scores based on cell line mutation status
-ggboxplot(
-  depmap_crispr_sub,
+p2 <- ggboxplot(
+  depmap_crispr_effect_sub,
   x = "tp53_status",
   y = "value",
   color = "tp53_status",
-  palette = c("#440154", "#fde725"),
-  add = "jitter"
+  palette = c("#b2182b", "#2166ac"),
+  add = "jitter",
+  shape = 19
 ) +
   stat_compare_means(aes(label = ..p.signif..), size = 3, label.x = 1.5) +
-  facet_wrap( ~ variable) +
+  facet_wrap(~ variable) +
   ylab("Gene Effect") +
-  xlab(NULL)
+  xlab(NULL) +
+  guides(color = guide_legend(title = "TP53 status"))
 
 ggsave(
-  filename = "~/Desktop/ZMAT3_CDKN1A_TP53/results/pan_cancer/effect_difference_boxplot_pan_cancer.pdf",
+  plot = p2,
+  filename = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/pan_cancer/effect_difference_boxplot_pan_cancer.pdf",
   dpi = 300,
   width = 4.5,
   height = 3.5,
@@ -236,17 +253,17 @@ ggsave(
 cell_line_status <- depmap_lines_mutations_cn_tp53 |>
   select(ModelID, tp53_mut_del_detailed) |>
   unique() |>
-  subset(ModelID %in% depmap_crispr_sub$ModelID) |>
+  subset(ModelID %in% depmap_crispr_effect_sub$ModelID) |>
   mutate(broad_status = case_when(tp53_mut_del_detailed == "WT" ~ "WT",
                                   TRUE ~ "Mut"))
 
-ggplot(cell_line_status,
-       aes(x = broad_status, fill = tp53_mut_del_detailed)) +
+p3 <- ggplot(cell_line_status,
+             aes(x = broad_status, fill = tp53_mut_del_detailed)) +
   geom_bar() +
   scale_fill_manual(
     values = c(
-      "WT" = "#440154",
-      "Hotspot" = "#fde725",
+      "WT" = "#b2182b",
+      "Hotspot" = "#2166ac",
       "Deleterious" = "#a0da39",
       "Deletion" = "#1fa187",
       "Other" = "#277f8e"
@@ -259,8 +276,10 @@ ggplot(cell_line_status,
   guides(fill = guide_legend(title = "TP53 status")) +
   labs(title = "Lines with KO scores + TP53 status\n(N = 1,095)") +
   theme(plot.title = element_text(hjust = 0.5))
+
 ggsave(
-  filename = "~/Desktop/ZMAT3_CDKN1A_TP53/results/cell_line_status_filtered.pdf",
+  plto = p3,
+  filename = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/cell_line_status_filtered.pdf",
   dpi = 300,
   width = 5,
   height = 3.5,
@@ -273,10 +292,12 @@ ggsave(
 # okay so what we want to do is to calculate a differential KO score for all genes by comparing tp53 mut vs. wt lines
 # then we want to see where zmat3 and cdkn1a rank in this list
 # download cell line information for DepMap lines (e.g. tissue of origin, mutations, etc.)
-download.file(url = "https://figshare.com/ndownloader/files/40448834",
-              destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/Model.csv")
+download.file(url = "https:/figshare.com/ndownloader/files/40448834",
+              destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/Model.csv")
 depmap_lines <-
-  read.csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/Model.csv") |>
+  read.csv(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/Model.csv"
+  ) |>
   select(
     ModelID,
     StrippedCellLineName,
@@ -287,22 +308,28 @@ depmap_lines <-
   )
 
 # add a different file that contains the ModelID and ProfileID relationships in order to pair the CRIPR and mutation data
-download.file(url = "https://figshare.com/ndownloader/files/40449635",
-              destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
-depmap_cell_line_names = read_csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
+download.file(url = "https:/figshare.com/ndownloader/files/40449635",
+              destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
+depmap_cell_line_names = read_csv(
+  "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv"
+)
 
 depmap_lines_mutations_all = left_join(depmap_lines_mutations, depmap_cell_line_names, by = "ProfileID")
 depmap_lines_mutations_all <-
   left_join(depmap_lines_mutations_all, depmap_lines, by = "ModelID")
 
+rm(depmap_lines_mutations)
+
 # subset mutation data to only lines that have paired CRISPR data
 depmap_lines_mutations_crispr <- depmap_lines_mutations_all |>
   subset(ModelID %in% depmap_crispr_effect$ModelID)
 
-rm(depmap_lines_mutations_all)
+# rm(depmap_lines_mutations_all)
 
 # load a file of tp53 target genes
-tp53_target_genes = read_excel("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/230524_Brooks_p53_target_list.xlsx")
+tp53_target_genes = read_excel(
+  "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/230524_Brooks_p53_target_list.xlsx"
+)
 
 # ========================================= #
 # Differential CRISPR KO effect analyses ####
@@ -321,11 +348,13 @@ depmap_effect_enrichment_by_tp53_mutation <-
     # loop through different cancer types if more than one are provided
     for (i in length(cancer_types)) {
       # create a directory to put the results
-      dir.create(paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
-        cancer_types[i],
-        sep = ""
-      ))
+      dir.create(
+        paste(
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+          cancer_types[i],
+          sep = ""
+        )
+      )
       
       if (pan_cancer %ni% c("yes", "Yes", "YES")) {
         sub_lines = depmap_lines_mutations_crispr |>
@@ -343,17 +372,40 @@ depmap_effect_enrichment_by_tp53_mutation <-
                                        TRUE ~ "WT")) |>
         dplyr::mutate(tp53_status = fct_relevel(tp53_status, c("WT", "Mut")))
       
+      # calculate the difference in mean effect score between genotype groups
       depmap_crispr_effect_sub_results <-
-        sapply(depmap_crispr_effect_sub[, -1], function(x) {
+        sapply(depmap_crispr_effect_sub[,-1], function(x) {
           mean(x[depmap_crispr_effect_sub$tp53_status == "WT"]) - mean(x[depmap_crispr_effect_sub$tp53_status == "Mut"])
-        })
-      
-      depmap_crispr_effect_sub_results = as.data.frame(depmap_crispr_effect_sub_results)
+        }) |>
+        as.data.frame()
       
       depmap_crispr_effect_sub_results$Gene = rownames(depmap_crispr_effect_sub_results)
+      
+      colnames(depmap_crispr_effect_sub_results) <-
+        c("depmap_crispr_effect_sub_results", "Gene")
+      
       # remove everything but the gene name from the gene names
       depmap_crispr_effect_sub_results$Gene <-
         gsub("\\...*", "", depmap_crispr_effect_sub_results$Gene)
+      
+      #################
+      # calculate p-value from t-test and add this to the results
+      exclude_columns <- c(1, 17933)
+      p_value <-
+        sapply(depmap_crispr_effect_sub[,-exclude_columns], function(x) {
+          t.test(x = x[depmap_crispr_effect_sub$tp53_status == "WT"],
+                 y = x[depmap_crispr_effect_sub$tp53_status == "Mut"])$p.value
+        })
+      
+      p_value <- as.data.frame(p_value)
+      p_value$Gene = rownames(p_value)
+      
+      # add the p-value to the mean differences
+      depmap_crispr_effect_sub_results <-
+        left_join(depmap_crispr_effect_sub_results, p_value, by = "Gene")
+      depmap_crispr_effect_sub_results$fdr <-
+        p.adjust(depmap_crispr_effect_sub_results$p_value)
+      ################
       
       # Order rows by decreasing value and add order number as a column
       depmap_crispr_effect_sub_results <-
@@ -375,11 +427,12 @@ depmap_effect_enrichment_by_tp53_mutation <-
           )
         )
       
+      # waterfall plot of mean effect differences between WT and Mut for each gene
       ggplot(
         depmap_crispr_effect_sub_results,
         aes(
           color = depmap_crispr_effect_sub_results,
-          reorder(depmap_crispr_effect_sub_results, -order_number),
+          reorder(depmap_crispr_effect_sub_results,-order_number),
           depmap_crispr_effect_sub_results,
           label = Gene_name
         )
@@ -406,7 +459,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
           size = 5,
           linejoin = "mitre",
           arrow = arrow(type = "closed", length = unit(0.01, "npc")),
-          color = "#fde725"
+          color = "#2166ac"
         ) +
         annotate(
           "text",
@@ -425,7 +478,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
           size = 5,
           linejoin = "mitre",
           arrow = arrow(type = "closed", length = unit(0.01, "npc")),
-          color = "#482475"
+          color = "#b2182b"
         ) +
         annotate(
           "text",
@@ -441,7 +494,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       
       ggsave(
         filename = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -456,7 +509,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       write_csv(
         x = depmap_crispr_effect_sub_results,
         file = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -465,10 +518,130 @@ depmap_effect_enrichment_by_tp53_mutation <-
         )
       )
       
+      
+      # volcano plot of mean vs p-val
+      # plot the results as a volcano plot
+      # Calculate quantiles
+      quantiles <-
+        quantile(
+          depmap_crispr_effect_sub_results$depmap_crispr_effect_sub_results,
+          probs = c(0.1, 0.9)
+        )
+      
+      # Create a new column 'annotation' based on quantiles
+      depmap_crispr_effect_sub_results$annotation <-
+        ifelse(
+          depmap_crispr_effect_sub_results$depmap_crispr_effect_sub_results < quantiles[1],
+          "10%",
+          ifelse(
+            depmap_crispr_effect_sub_results$depmap_crispr_effect_sub_results > quantiles[2],
+            "10%",
+            "Middle 80%"
+          )
+        )
+      
+      # add column for alpha
+      depmap_crispr_effect_sub_results <-
+        depmap_crispr_effect_sub_results |>
+        mutate(
+          significant = case_when(
+            depmap_crispr_effect_sub_results < .1 &
+              depmap_crispr_effect_sub_results > -.1 ~ "NS",
+            annotation == "10%" &
+              fdr < 0.05 ~ "significant",
+            annotation == "10%" &
+              fdr < 0.05 ~ "significant",
+            TRUE ~ "NS"
+          )
+        )
+      
+      # make the volcano plot
+   ggplot(
+        depmap_crispr_effect_sub_results,
+        aes(depmap_crispr_effect_sub_results,-log(fdr),
+            color = depmap_crispr_effect_sub_results
+            )
+      ) +
+        # geom_vline(
+        #   xintercept = -.1,
+        #   slope = (0),
+        #   color = "#969696",
+        #   linetype = "dashed",
+        #   size = .5
+        # ) +
+        # geom_vline(
+        #   xintercept = .1,
+        #   slope = (0),
+        #   color = "#969696",
+      #   linetype = "dashed",
+      #   size = .5
+      # ) +
+      geom_abline(
+        intercept = -log(0.05),
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+        geom_point(shape = 19, aes(alpha = significant)) +
+        scale_color_viridis(name = "Effect\ndifference") +
+        scale_fill_viridis() +
+        theme_cowplot() +
+        ylab("-log(FDR)") +
+        xlab("Mean effect difference (WT-Mut)")
+      
+     
+   # annotate tp53 target genes
+   depmap_crispr_effect_sub_results <- 
+     depmap_crispr_effect_sub_results |>
+     mutate(label = case_when(
+       Gene %in% tp53_target_genes$`Gene Symbol` ~ "TP53 target gene",
+       TRUE ~ "Other"
+     ))
+   
+   # make the volcano plot
+   ggplot(
+     depmap_crispr_effect_sub_results,
+     aes(depmap_crispr_effect_sub_results,-log(fdr),
+         color = depmap_crispr_effect_sub_results
+     )
+   ) +
+   geom_vline(
+     xintercept = -.1,
+     slope = (0),
+     color = "lightgrey",
+     linetype = "dashed",
+     size = .5
+   ) +
+   geom_vline(
+     xintercept = .1,
+     slope = (0),
+     color = "lightgrey",
+     linetype = "dashed",
+     size = .5
+   ) +
+   geom_abline(
+     intercept = -log(0.05),
+     slope = (0),
+     color = "lightgrey",
+     linetype = "dashed",
+     size = .5
+   ) +
+     geom_point(shape = 19, aes(alpha = label)) +
+     scale_color_viridis(name = "Effect\ndifference") +
+     scale_fill_viridis() +
+     theme_cowplot() +
+     ylab("-log(FDR)") +
+     xlab("Mean effect difference (WT-Mut)") + 
+     scale_alpha_manual(values = c("Other" = 0.05, "TP53 target gene" = 0.9))
+   
+   
+    
+      
       # plot cases where the effect difference between WT and Mut fall in ++ (tumor suppressor activity) and -- (synthetic lethal like) cases
       # Create a new dataframe with mean values based on mutation status
       mean_values <-
-        aggregate(. ~ tp53_status, data = depmap_crispr_effect_sub[,-1], FUN = mean)
+        aggregate(. ~ tp53_status, data = depmap_crispr_effect_sub[, -1], FUN = mean)
       
       # Extract the relevant columns from the mean_values dataframe
       mean_values_t <- mean_values |>
@@ -476,7 +649,6 @@ depmap_effect_enrichment_by_tp53_mutation <-
         as.data.frame() |>
         row_to_names(1) |>
         rownames_to_column(var = "Gene")
-      
       
       # Add the mean differences to the mean_values dataframe
       depmap_crispr_effect_sub_results <-
@@ -529,11 +701,11 @@ depmap_effect_enrichment_by_tp53_mutation <-
         ggtitle(paste(cancer_types, "\n(", num_lines, " lines)", sep = "")) +
         theme(plot.title = element_text(hjust = 0.5)) +
         guides(fill = FALSE) +
-        facet_wrap( ~ group, nrow = 3)
+        facet_wrap(~ group, nrow = 3)
       
       ggsave(
         filename = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -548,7 +720,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       write_csv(
         x = depmap_crispr_effect_sub_results,
         file = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -558,12 +730,12 @@ depmap_effect_enrichment_by_tp53_mutation <-
       )
       
       # now, perform a targeted analysis only within known TP53 target genes
-      target_genes <- tp53_target_genes 
+      target_genes <- tp53_target_genes
       
       depmap_crispr_effect_sub_tp53_targets <-
         depmap_crispr_effect_sub_results |>
         subset(Gene %in% target_genes$`Gene Symbol`) |>
-        arrange(desc(depmap_crispr_effect_sub_tp53_targets)) |>
+        arrange(desc(depmap_crispr_effect_sub_results)) |>
         mutate(
           order_number = row_number(),
           Gene_name = case_when(
@@ -571,20 +743,20 @@ depmap_effect_enrichment_by_tp53_mutation <-
             order_number <= 5 ~ Gene,
             order_number > n() - 5 ~ Gene
           )
-        ) 
-        
-        ggplot(
-          depmap_crispr_effect_sub_tp53_targets,
-          aes(
-            color = depmap_crispr_effect_sub_results,
-            reorder(
-              depmap_crispr_effect_sub_results,
-              depmap_crispr_effect_sub_results
-            ),
+        )
+      
+      ggplot(
+        depmap_crispr_effect_sub_tp53_targets,
+        aes(
+          color = depmap_crispr_effect_sub_results,
+          reorder(
             depmap_crispr_effect_sub_results,
-            label = Gene_name
-          )
-        ) +
+            depmap_crispr_effect_sub_results
+          ),
+          depmap_crispr_effect_sub_results,
+          label = Gene_name
+        )
+      ) +
         geom_point(size = 0.5) +
         geom_bar(aes(fill = depmap_crispr_effect_sub_results), stat = "identity") +
         scale_color_viridis(name = "Effect\ndifference") +
@@ -604,7 +776,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       
       ggsave(
         filename = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -619,7 +791,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       write_csv(
         depmap_crispr_effect_sub_tp53_targets,
         file = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -673,11 +845,11 @@ depmap_effect_enrichment_by_tp53_mutation <-
         ggtitle(paste(cancer_types[i], "\nTP53 target genes")) +
         theme(plot.title = element_text(hjust = 0.5)) +
         guides(fill = FALSE) +
-        facet_wrap( ~ group, nrow = 3)
+        facet_wrap(~ group, nrow = 3)
       
       ggsave(
         filename = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -692,7 +864,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       write_csv(
         x = depmap_crispr_effect_sub_tp53_targets,
         file = paste(
-          "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
           cancer_types[i],
           "/",
           cancer_types[i],
@@ -705,7 +877,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
     }
   }
 
-depmap_effect_enrichment_by_tp53_mutation(pan_cancer = "No", cancer_types = "HCC")
+depmap_effect_enrichment_by_tp53_mutation(pan_cancer = "Yes", cancer_types = "HCC")
 
 
 
@@ -724,10 +896,10 @@ library("KEGGREST")
 library("DESeq2")
 
 # download and read in the gene expression data for the cell lines
-download.file(url = "https://figshare.com/ndownloader/files/40449107",
-              destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsExpressionGenesExpectedCountProfile.csv")
+download.file(url = "https:/figshare.com/ndownloader/files/40449107",
+              destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsExpressionGenesExpectedCountProfile.csv")
 depmap_rna_count = read_csv(
-  "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsExpressionGenesExpectedCountProfile.csv"
+  "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsExpressionGenesExpectedCountProfile.csv"
 )
 
 # remove the white space between HUGO and ENSG from the header
@@ -753,7 +925,9 @@ metaData = as.data.frame(colnames(depmap_rna_count_t[, 1:ncol(depmap_rna_count_t
 names(metaData) = "ProfileID"
 
 # cell line info for labeling
-depmap_cell_line_names = read_csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv")
+depmap_cell_line_names = read_csv(
+  "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/OmicsProfiles.csv"
+)
 
 # join meta data with cell line labeling info
 metaData_all = left_join(metaData, depmap_cell_line_names, by = "ProfileID")
@@ -768,7 +942,9 @@ metaData_all = metaData_all |>
 
 # add the cancer type information to the cell lines in order to filter in the function
 depmap_lines <-
-  read.csv("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/Model.csv") |>
+  read.csv(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/Model.csv"
+  ) |>
   select(
     ModelID,
     StrippedCellLineName,
@@ -793,13 +969,17 @@ BiocManager::install("fgsea")
 
 # download and read in files for GSEA analysis
 # annotated hallmark pathways from MSigDB
-# download.file(url = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2023.1.Hs/h.all.v2023.1.Hs.symbols.gmt", destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/h.all.v2023.1.Hs.symbols.gmt")
+# download.file(url = "https:/www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2023.1.Hs/h.all.v2023.1.Hs.symbols.gmt", destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/h.all.v2023.1.Hs.symbols.gmt")
 pathways.hallmark <-
-  gmtPathways("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/h.all.v2023.1.Hs.symbols.gmt.txt")
+  gmtPathways(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/h.all.v2023.1.Hs.symbols.gmt.txt"
+  )
 # transcription factor targets
-# download.file(url = "https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2023.1.Hs/c3.tft.v2023.1.Hs.symbols.gmt", destfile = "~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/c3.tft.v2023.1.Hs.symbols.gmt")
+# download.file(url = "https:/www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/2023.1.Hs/c3.tft.v2023.1.Hs.symbols.gmt", destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/c3.tft.v2023.1.Hs.symbols.gmt")
 pathways.tfs <-
-  gmtPathways("~/Desktop/ZMAT3_CDKN1A_TP53/raw_data/c3.tft.v2023.1.Hs.symbols.gmt.txt")
+  gmtPathways(
+    "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/c3.tft.v2023.1.Hs.symbols.gmt.txt"
+  )
 
 
 # ================================= #
@@ -818,11 +998,13 @@ depmap_deseq2_gsea_function <-
       cancer_type <- readline(prompt = "Select cancer type: ")
       
       # create a directory for saving results to
-      dir.create(paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
-        cancer_type,
-        sep = ""
-      ))
+      dir.create(
+        paste(
+          "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+          cancer_type,
+          sep = ""
+        )
+      )
       
       # select the cell lines in the cancer of interest
       metaData_sub <-
@@ -880,13 +1062,13 @@ depmap_deseq2_gsea_function <-
       x = "tp53_status",
       y = "value",
       color = "tp53_status",
-      palette = c("#440154", "#fde725"),
+      palette = c("#b2182b", "#2166ac"),
       add = "jitter"
     ) +
       stat_compare_means(aes(label = ..p.signif..),
                          size = 3,
                          label.x = 1.5) +
-      facet_wrap( ~ variable) +
+      facet_wrap(~ variable) +
       ylab("log(Gene Expression)") +
       xlab(NULL) +
       ggtitle(paste(
@@ -901,7 +1083,7 @@ depmap_deseq2_gsea_function <-
     
     ggsave(
       filename = paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/expression_difference_boxplot.pdf",
         sep = ""
@@ -927,7 +1109,7 @@ depmap_deseq2_gsea_function <-
       )
     
     keep <- rowSums(DESeq2::counts(dds_tp53) >= 10) >= 5
-    dds_tp53 <- dds_tp53[keep, ]
+    dds_tp53 <- dds_tp53[keep,]
     dds_tp53$tp53_status <-
       relevel(dds_tp53$tp53_status, ref = "WT")
     dds_tp53 <- DESeq2::DESeq(dds_tp53)
@@ -976,7 +1158,7 @@ depmap_deseq2_gsea_function <-
                                   levels = c("large_fc_sig", "large_fc_ns", "small_fc_ns"))
     
     # plot the results as a volcano plot
-    ggplot(res_tp53, aes(log2FoldChange, -log(padj))) +
+    ggplot(res_tp53, aes(log2FoldChange,-log(padj))) +
       geom_vline(
         xintercept = -1.5,
         slope = (0),
@@ -1000,9 +1182,9 @@ depmap_deseq2_gsea_function <-
       ) +
       geom_point(aes(fill = dir_effect, alpha = fold_change), shape = 21) +
       scale_fill_manual(values = c(
-        "downregulated" = "#440154",
+        "downregulated" = "#b2182b",
         "NS" = "#f5f5f5",
-        "upregulated" = "#fde725"
+        "upregulated" = "#2166ac"
       )) +
       scale_alpha_discrete(range = c(1, .25), guide = 'none') +
       xlab(label = "log2 FC") +
@@ -1025,15 +1207,16 @@ depmap_deseq2_gsea_function <-
         segment.size = 0.5
       ) +
       scale_color_manual(values = c(
-        "downregulated" = "#440154",
+        "downregulated" = "#b2182b",
         "NS" = "#f5f5f5",
-        "upregulated" = "#fde725"
+        "upregulated" = "#2166ac"
       )) +
       guides(fill = guide_legend(override.aes = list(size = 3), title = NULL))
     
+    # save plot
     ggsave(
       paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/tp53_differential_expression_custom_volcano.pdf",
         sep = ""
@@ -1041,15 +1224,88 @@ depmap_deseq2_gsea_function <-
       width = 7.5,
       height = 5
     )
+    # save results file
     write_csv(
       res_tp53,
       file = paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/differential_expression_results.csv",
         sep = ""
       )
     )
+    
+    # highlight the TP53 target genes
+    # plot the results as a volcano plot with tp53 target genes highlighted
+    res_tp53 <- 
+      res_tp53 |>
+      mutate(label = case_when(
+        row %in% tp53_target_genes$`Gene Symbol` ~ "Yes",
+        TRUE ~ "No"
+      )) |>
+      arrange(label)
+    
+    
+    ggplot(res_tp53, aes(log2FoldChange,-log(padj))) +
+      geom_vline(
+        xintercept = -1.5,
+        slope = (0),
+        color = "#969696",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_vline(
+        xintercept = 1.5,
+        slope = (0),
+        color = "#969696",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = -log(0.01),
+        slope = (0),
+        color = "#969696",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_point(aes(fill = dir_effect, alpha = label), shape = 21, position = "identity") +
+      scale_fill_manual(values = c(
+        "Other" = "#b2182b",
+        "TP53 target gene" = "#2166ac"
+      )) +
+      scale_alpha_discrete(range = c(0.05, 1)) +
+      xlab(label = "log2 FC") +
+      ylab("-log(p-adj)") +
+      theme_cowplot() +
+      ggtitle(paste(cancer_type, "\nTP53 WT vs Mut")) +
+      theme(
+        legend.title.align = 0.5,
+        legend.position = "right",
+        legend.justification = "center",
+        plot.title = element_text(hjust = 0.5)
+      ) +
+      scale_fill_manual(values = c(
+        "downregulated" = "#b2182b",
+        "NS" = "#f5f5f5",
+        "upregulated" = "#2166ac"
+      )) +
+      guides(fill = guide_legend(override.aes = list(size = 3), title = NULL),
+             alpha = guide_legend(override.aes = list(size = 3), title = "TP53 target gene"))
+    
+    ggsave(
+      paste(
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+        cancer_type,
+        "/tp53_differential_expression_volcano_tp53_target_genes.pdf",
+        sep = ""
+      ),
+      width = 7.5,
+      height = 5
+    )
+    
+    
+    
+    
     
     # PCA plot
     #First we need to transform the raw count data
@@ -1060,13 +1316,13 @@ depmap_deseq2_gsea_function <-
       DESeq2::plotPCA(vsdata_tp53, intgroup = "tp53_status", returnData = TRUE)
     percentVar <- round(100 * attr(pcaData_tp53, "percentVar"))
     
-    pcaData_tp53 = pcaData_tp53[order(pcaData_tp53$group), ]
+    pcaData_tp53 = pcaData_tp53[order(pcaData_tp53$group),]
     
     ggplot(pcaData_tp53, aes(PC1, PC2, fill = tp53_status)) +
       geom_point(size = 3, shape = 21) +
       xlab(paste0("PC1: ", percentVar[1], "% variance")) +
       ylab(paste0("PC2: ", percentVar[2], "% variance")) +
-      scale_fill_manual(values = c("WT" = "#440154", "Mut" = "#fde725")) +
+      scale_fill_manual(values = c("WT" = "#b2182b", "Mut" = "#2166ac")) +
       theme_cowplot() +
       ggtitle(paste(cancer_type, "\nTP53 WT vs Mut PCA")) +
       theme(
@@ -1078,7 +1334,7 @@ depmap_deseq2_gsea_function <-
       )
     ggsave(
       paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/tp53_differential_expression_PCA.pdf",
         sep = ""
@@ -1128,7 +1384,7 @@ depmap_deseq2_gsea_function <-
         `Enriched in` = case_when(NES < 0 ~ "WT",
                                   NES > 0 ~ "Mut"),
         significance = case_when(padj < 0.1 ~ "padj < 0.1",
-                                 padj > 0.1 ~ "padj > 0.1",)
+                                 padj > 0.1 ~ "padj > 0.1", )
       )
     
     plot_data_tp53$significance = factor(plot_data_tp53$significance,
@@ -1148,7 +1404,7 @@ depmap_deseq2_gsea_function <-
       )
     ) +
       geom_point(color = "black", shape = 21, aes(size = size)) +
-      scale_fill_manual(values = c("WT" = "#440154", "Mut" = "#fde725")) +
+      scale_fill_manual(values = c("WT" = "#b2182b", "Mut" = "#2166ac")) +
       theme_cowplot() +
       ylab(NULL) +
       coord_cartesian(ylim = c(0, 21), clip = "off") +
@@ -1168,7 +1424,7 @@ depmap_deseq2_gsea_function <-
         size = 5,
         linejoin = "mitre",
         arrow = arrow(type = "closed", length = unit(0.01, "npc")),
-        color = "#fde725"
+        color = "#2166ac"
       ) +
       annotate(
         "segment",
@@ -1179,7 +1435,7 @@ depmap_deseq2_gsea_function <-
         size = 5,
         linejoin = "mitre",
         arrow = arrow(type = "closed", length = unit(0.01, "npc")),
-        color = "#440154"
+        color = "#b2182b"
       ) +
       annotate(
         "text",
@@ -1209,7 +1465,7 @@ depmap_deseq2_gsea_function <-
     
     ggsave(
       paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/tp53_gsea2.pdf",
         sep = ""
@@ -1220,7 +1476,7 @@ depmap_deseq2_gsea_function <-
     write_csv(
       plot_data_tp53,
       file = paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/gsea_hallmark_pathways_results.csv",
         sep = ""
@@ -1268,7 +1524,7 @@ depmap_deseq2_gsea_function <-
         `Enriched in` = case_when(NES < 0 ~ "WT",
                                   NES > 0 ~ "Mut"),
         significance = case_when(padj < 0.1 ~ "padj < 0.1",
-                                 padj > 0.1 ~ "padj > 0.1",)
+                                 padj > 0.1 ~ "padj > 0.1", )
       )
     
     plot_data_tp53_tft$significance = factor(plot_data_tp53_tft$significance,
@@ -1289,7 +1545,7 @@ depmap_deseq2_gsea_function <-
       geom_point(color = "black",
                  shape = 21,
                  aes(size = size, alpha = significance)) +
-      scale_fill_manual(values = c("WT" = "#440154", "Mut" = "#fde725")) +
+      scale_fill_manual(values = c("WT" = "#b2182b", "Mut" = "#2166ac")) +
       theme_cowplot() +
       ylab(NULL) +
       coord_cartesian(ylim = c(0, 21), clip = "off") +
@@ -1309,7 +1565,7 @@ depmap_deseq2_gsea_function <-
         size = 5,
         linejoin = "mitre",
         arrow = arrow(type = "closed", length = unit(0.01, "npc")),
-        color = "#fde725"
+        color = "#2166ac"
       ) +
       annotate(
         "segment",
@@ -1320,7 +1576,7 @@ depmap_deseq2_gsea_function <-
         size = 5,
         linejoin = "mitre",
         arrow = arrow(type = "closed", length = unit(0.01, "npc")),
-        color = "#440154"
+        color = "#b2182b"
       ) +
       annotate(
         "text",
@@ -1350,7 +1606,7 @@ depmap_deseq2_gsea_function <-
     
     ggsave(
       paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/tp53_gsea2_tf_pathways.pdf",
         sep = ""
@@ -1361,7 +1617,7 @@ depmap_deseq2_gsea_function <-
     write_csv(
       plot_data_tp53_tft,
       file = paste(
-        "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
         cancer_type,
         "/gsea_transcription_factor_targets_results.csv",
         sep = ""
@@ -1371,9 +1627,9 @@ depmap_deseq2_gsea_function <-
   }
 
 depmap_deseq2_gsea_function(
-  pan_cancer = "No",
+  pan_cancer = "Yes",
   cancer_type = "AML",
-  genes_of_interest = c("CHEK2", "MDM2")
+  genes_of_interest = c(tp53_target_genes$`Gene Symbol`)
 )
 
 
@@ -1398,7 +1654,7 @@ depmap_deseq2_gsea_function(
 #   x = "tp53_status",
 #   y = "ZMAT3",
 #   color = "tp53_status",
-#   palette = c("#440154", "#fde725"),
+#   palette = c("#b2182b", "#2166ac"),
 #   add = "jitter"
 # ) +
 #   stat_compare_means(aes(label = ..p.signif..),
@@ -1414,7 +1670,7 @@ depmap_deseq2_gsea_function(
 #   facet_wrap( ~ DepmapModelType, ncol = 20)
 #
 # ggsave(
-#   filename = "~/Desktop/ZMAT3_CDKN1A_TP53/results/ZMAT3_effect_detailed/expression_difference_boxplot.pdf",
+#   filename = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/ZMAT3_effect_detailed/expression_difference_boxplot.pdf",
 #   dpi = 300,
 #   width = 20,
 #   height = 10,
@@ -1482,7 +1738,7 @@ depmap_deseq2_gsea_function(
 # ggsave(
 #   plot = p1,
 #   filename = paste(
-#     "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+#     "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
 #     paste(genes_of_interest[i]),
 #     "_effect_difference_waterfall_tp53_Status.pdf",
 #     sep = ""
@@ -1497,7 +1753,7 @@ depmap_deseq2_gsea_function(
 # ggsave(
 #   plot = p_dist_ident,
 #   filename = paste(
-#     "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+#     "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
 #     paste(genes_of_interest[i]),
 #     "_effect_difference_waterfall_tp53_status_tissue_type.pdf",
 #     sep = ""
@@ -1512,7 +1768,7 @@ depmap_deseq2_gsea_function(
 # write.csv(
 #   sub_data_ranked,
 #   file = paste(
-#     "~/Desktop/ZMAT3_CDKN1A_TP53/results/",
+#     "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
 #     paste(genes_of_interest[i]),
 #     "_effect_score_tp53_status_tissue_type.csv",
 #     sep = ""
