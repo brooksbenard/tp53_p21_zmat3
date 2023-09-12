@@ -5,7 +5,7 @@
 # if ZMAT3 and CDKN1A prototypes are conserved pan-cancer
 # ========================================================================================================================================= #
 
-# load required packages
+# load required packages ----
 # Package names
 packages <-
   c(
@@ -44,21 +44,16 @@ invisible(lapply(packages, library, character.only = TRUE))
 `%ni%` <- Negate(`%in%`)
 options(scipen = 999)
 
-# make directories for data
+# make directories for data ----
 dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53")
 dir.create(
   "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data"
 )
 dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results")
 
-# dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/")
-# dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data")
-# dir.create("~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results")
-
-
-# ======================== #
-# Cell line information ####
-# ======================== #
+# ========================= #
+# Cell line information ----
+# ========================= #
 # download cell line information for DepMap lines (e.g. tissue of origin, mutations, etc.)
 # cell line mutation file
 download.file("https:/ndownloader.figshare.com/files/27902118",
@@ -124,9 +119,9 @@ depmap_lines_mutations_tp53 = left_join(depmap_lines_mutations_tp53, depmap_cell
 # remove unnecessary intermediates
 rm(depmap_lines_mutations)
 
-# ======================================================= #
-# Now integrate the copy number status for the p53 locus  #
-# ======================================================= #
+# ============================== #
+# Copy number status for p53 ----
+# ============================== #
 # download the cell line copy number file
 download.file(
   "https:/depmap.org/portal/download/all/?releasename=DepMap+Public+23Q2&filename=OmicsCNGene.csv",
@@ -196,9 +191,9 @@ ggplot(cell_line_status,
   theme_cowplot()
 
 
-# ========================== #
-# CRISPR gene effect data ####
-# ========================== #
+# =========================== #
+# CRISPR gene effect data ----
+# =========================== #
 # download the CRONOS gene effect scores from the DepMap database
 download.file("https:/figshare.com/ndownloader/files/40448555",
               destfile = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/CRISPRGeneEffect.csv")
@@ -287,9 +282,10 @@ ggsave(
 )
 
 
-
-# ZMAT3 and CDKN1A analyses ####
-# okay so what we want to do is to calculate a differential KO score for all genes by comparing tp53 mut vs. wt lines
+# ============================= # 
+# ZMAT3 and CDKN1A analyses ----
+# ============================= # 
+# What we want to do is to calculate a differential KO score for all genes by comparing tp53 mut vs. wt lines
 # then we want to see where zmat3 and cdkn1a rank in this list
 # download cell line information for DepMap lines (e.g. tissue of origin, mutations, etc.)
 download.file(url = "https:/figshare.com/ndownloader/files/40448834",
@@ -324,17 +320,17 @@ rm(depmap_lines_mutations)
 depmap_lines_mutations_crispr <- depmap_lines_mutations_all |>
   subset(ModelID %in% depmap_crispr_effect$ModelID)
 
-# rm(depmap_lines_mutations_all)
 
-# load a file of tp53 target genes
+# p53 target genes ----
 tp53_target_genes = read_excel(
   "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/raw_data/230524_Brooks_p53_target_list.xlsx"
 )
 
 # ========================================= #
-# Differential CRISPR KO effect analyses ####
+# Differential CRISPR KO effect analyses ----
 # ========================================= #
-# Here, we write a function to automate the gene effect difference between mutated and wt cell lines based on cancer type of interest (or pan-cancer)
+# Here, we write a function to automate the gene effect difference between mutated and wt cell lines 
+# based on cancer type of interest (or pan-cancer)
 depmap_effect_enrichment_by_tp53_mutation <-
   function(pan_cancer, cancer_types) {
     if (pan_cancer %in% c("yes", "Yes", "YES")) {
@@ -382,13 +378,12 @@ depmap_effect_enrichment_by_tp53_mutation <-
       depmap_crispr_effect_sub_results$Gene = rownames(depmap_crispr_effect_sub_results)
       
       colnames(depmap_crispr_effect_sub_results) <-
-        c("depmap_crispr_effect_sub_results", "Gene")
+        c("mean_difference", "Gene")
       
       # remove everything but the gene name from the gene names
       depmap_crispr_effect_sub_results$Gene <-
         gsub("\\...*", "", depmap_crispr_effect_sub_results$Gene)
       
-      #################
       # calculate p-value from t-test and add this to the results
       exclude_columns <- c(1, 17933)
       p_value <-
@@ -405,7 +400,6 @@ depmap_effect_enrichment_by_tp53_mutation <-
         left_join(depmap_crispr_effect_sub_results, p_value, by = "Gene")
       depmap_crispr_effect_sub_results$fdr <-
         p.adjust(depmap_crispr_effect_sub_results$p_value)
-      ################
       
       # Order rows by decreasing value and add order number as a column
       depmap_crispr_effect_sub_results <-
@@ -416,7 +410,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       
       depmap_crispr_effect_sub_results <-
         depmap_crispr_effect_sub_results |>
-        arrange(desc(depmap_crispr_effect_sub_results)) |>
+        arrange(desc(mean_difference)) |>
         mutate(
           order_number = row_number(),
           Gene_name = case_when(
@@ -431,14 +425,14 @@ depmap_effect_enrichment_by_tp53_mutation <-
       ggplot(
         depmap_crispr_effect_sub_results,
         aes(
-          color = depmap_crispr_effect_sub_results,
-          reorder(depmap_crispr_effect_sub_results,-order_number),
-          depmap_crispr_effect_sub_results,
+          color = mean_difference,
+          reorder(mean_difference,-order_number),
+          mean_difference,
           label = Gene_name
         )
       ) +
         geom_point() +
-        geom_bar(aes(fill = depmap_crispr_effect_sub_results), stat = "identity") +
+        geom_bar(aes(fill = mean_difference), stat = "identity") +
         scale_color_viridis(name = "Effect\ndifference") +
         scale_fill_viridis() +
         geom_label_repel() +
@@ -524,17 +518,17 @@ depmap_effect_enrichment_by_tp53_mutation <-
       # Calculate quantiles
       quantiles <-
         quantile(
-          depmap_crispr_effect_sub_results$depmap_crispr_effect_sub_results,
+          depmap_crispr_effect_sub_results$mean_difference,
           probs = c(0.1, 0.9)
         )
       
       # Create a new column 'annotation' based on quantiles
       depmap_crispr_effect_sub_results$annotation <-
         ifelse(
-          depmap_crispr_effect_sub_results$depmap_crispr_effect_sub_results < quantiles[1],
+          depmap_crispr_effect_sub_results$mean_difference < quantiles[1],
           "10%",
           ifelse(
-            depmap_crispr_effect_sub_results$depmap_crispr_effect_sub_results > quantiles[2],
+            depmap_crispr_effect_sub_results$mean_difference > quantiles[2],
             "10%",
             "Middle 80%"
           )
@@ -544,98 +538,163 @@ depmap_effect_enrichment_by_tp53_mutation <-
       depmap_crispr_effect_sub_results <-
         depmap_crispr_effect_sub_results |>
         mutate(
-          significant = case_when(
-            depmap_crispr_effect_sub_results < .1 &
-              depmap_crispr_effect_sub_results > -.1 ~ "NS",
+          Significance = case_when(
+            mean_difference < .1 &
+              mean_difference > -.1 ~ "Middle 80%",
             annotation == "10%" &
-              fdr < 0.05 ~ "significant",
+              fdr < 0.05 ~ "10th percentile",
             annotation == "10%" &
-              fdr < 0.05 ~ "significant",
-            TRUE ~ "NS"
+              fdr < 0.05 ~ "10th percentile",
+            TRUE ~ "Middle 80%"
           )
         )
-      
-      # make the volcano plot
-   ggplot(
-        depmap_crispr_effect_sub_results,
-        aes(depmap_crispr_effect_sub_results,-log(fdr),
-            color = depmap_crispr_effect_sub_results
-            )
-      ) +
-        # geom_vline(
-        #   xintercept = -.1,
-        #   slope = (0),
-        #   color = "#969696",
-        #   linetype = "dashed",
-        #   size = .5
-        # ) +
-        # geom_vline(
-        #   xintercept = .1,
-        #   slope = (0),
-        #   color = "#969696",
-      #   linetype = "dashed",
-      #   size = .5
-      # ) +
-      geom_abline(
-        intercept = -log(0.05),
-        slope = (0),
-        color = "lightgrey",
-        linetype = "dashed",
-        size = .5
-      ) +
-        geom_point(shape = 19, aes(alpha = significant)) +
-        scale_color_viridis(name = "Effect\ndifference") +
-        scale_fill_viridis() +
-        theme_cowplot() +
-        ylab("-log(FDR)") +
-        xlab("Mean effect difference (WT-Mut)")
-      
-     
-   # annotate tp53 target genes
+   #    
+   #    depmap_crispr_effect_sub_results$Significance <- factor(depmap_crispr_effect_sub_results$Significance, levels = c("Middle 80%", "10th percentile"))
+   #    
+   #    # make the volcano plot
+   # ggplot(
+   #      depmap_crispr_effect_sub_results,
+   #      aes(mean_difference,-log(fdr),
+   #          fill = mean_difference            )
+   #    ) +
+   #    geom_vline(
+   #      xintercept = -.1,
+   #      slope = (0),
+   #      color = "lightgrey",
+   #      linetype = "dashed",
+   #      size = .5
+   #    ) +
+   #    geom_vline(
+   #      xintercept = .1,
+   #      slope = (0),
+   #      color = "lightgrey",
+   #      linetype = "dashed",
+   #      size = .5
+   #    ) +
+   #    geom_abline(
+   #      intercept = -log(0.05),
+   #      slope = (0),
+   #      color = "lightgrey",
+   #      linetype = "dashed",
+   #      size = .5
+   #    ) +
+   #      geom_point(aes(alpha = Significance, color = mean_difference)) +
+   #      scale_color_viridis(name = "Effect\ndifference") +
+   #      scale_fill_viridis() +
+   #      theme_cowplot() +
+   #      ylab("-log(FDR)") +
+   #      xlab("Mean effect difference (WT-Mut)") +
+   #   guides(alpha = guide_legend(override.aes = list(size = 3), title = NULL),
+   #          fill = FALSE)
+   #    
+   
+   #----
+   # plot the results as a volcano plot
+   depmap_crispr_effect_sub_results$Significance <- factor(depmap_crispr_effect_sub_results$Significance, levels = c("10th percentile", "Middle 80%"))
+   
+   ggplot(depmap_crispr_effect_sub_results, aes(mean_difference,-log(fdr))) +
+     geom_vline(
+       xintercept = -.1,
+       slope = (0),
+       color = "lightgrey",
+       linetype = "dashed",
+       size = .5
+     ) +
+     geom_vline(
+       xintercept = .1,
+       slope = (0),
+       color = "lightgrey",
+       linetype = "dashed",
+       size = .5
+     ) +
+     geom_abline(
+       intercept = -log(0.05),
+       slope = (0),
+       color = "lightgrey",
+       linetype = "dashed",
+       size = .5
+     ) +
+     geom_point(aes(fill = mean_difference, alpha = Significance), shape = 21) +
+     scale_alpha_discrete(range = c(1, .05), guide = 'none') +
+     xlab(label = "Mean effect difference (WT-Mut)") +
+     ylab("-log(p-adj)") +
+     theme_cowplot() +
+     scale_fill_viridis(name = "Effect\ndifference") +
+     guides(alpha = guide_legend(override.aes = list(size = 3), title = NULL))
+   
+   #----
+   ggsave(
+     filename = paste(
+       "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+       cancer_types[i],
+       "/",
+       cancer_types[i],
+       "_effect_difference_volcano.pdf",
+       sep = ""
+     ),
+     dpi = 300,
+     width = 6,
+     height = 3.5,
+     units = "in"
+   )
+   
+   
+   # annotate tp53 target genes ----
    depmap_crispr_effect_sub_results <- 
      depmap_crispr_effect_sub_results |>
      mutate(label = case_when(
-       Gene %in% tp53_target_genes$`Gene Symbol` ~ "TP53 target gene",
-       TRUE ~ "Other"
+       Gene %in% tp53_target_genes$`Gene Symbol` ~ "Yes",
+       TRUE ~ "No"
      ))
    
+   depmap_crispr_effect_sub_results$label <- factor(depmap_crispr_effect_sub_results$label, levels = c("Yes", "No"))
+   
    # make the volcano plot
-   ggplot(
-     depmap_crispr_effect_sub_results,
-     aes(depmap_crispr_effect_sub_results,-log(fdr),
-         color = depmap_crispr_effect_sub_results
-     )
-   ) +
-   geom_vline(
-     xintercept = -.1,
-     slope = (0),
-     color = "lightgrey",
-     linetype = "dashed",
-     size = .5
-   ) +
-   geom_vline(
-     xintercept = .1,
-     slope = (0),
-     color = "lightgrey",
-     linetype = "dashed",
-     size = .5
-   ) +
-   geom_abline(
-     intercept = -log(0.05),
-     slope = (0),
-     color = "lightgrey",
-     linetype = "dashed",
-     size = .5
-   ) +
-     geom_point(shape = 19, aes(alpha = label)) +
-     scale_color_viridis(name = "Effect\ndifference") +
-     scale_fill_viridis() +
+   ggplot(depmap_crispr_effect_sub_results, aes(mean_difference,-log(fdr))) +
+     geom_vline(
+       xintercept = -.1,
+       slope = (0),
+       color = "lightgrey",
+       linetype = "dashed",
+       size = .5
+     ) +
+     geom_vline(
+       xintercept = .1,
+       slope = (0),
+       color = "lightgrey",
+       linetype = "dashed",
+       size = .5
+     ) +
+     geom_abline(
+       intercept = -log(0.05),
+       slope = (0),
+       color = "lightgrey",
+       linetype = "dashed",
+       size = .5
+     ) +
+     geom_point(aes(fill = mean_difference, alpha = label), shape = 21) +
+     scale_alpha_discrete(range = c(1, .05), guide = 'none') +
+     xlab(label = "Mean difference") +
+     ylab("-log(p-adj)") +
      theme_cowplot() +
-     ylab("-log(FDR)") +
-     xlab("Mean effect difference (WT-Mut)") + 
-     scale_alpha_manual(values = c("Other" = 0.05, "TP53 target gene" = 0.9))
+     scale_fill_viridis(name = "Effect\ndifference") +
+     guides(alpha = guide_legend(order = 1, override.aes = list(size = 3), title = "p53 target gene"))
    
    
+   ggsave(
+     filename = paste(
+       "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+       cancer_types[i],
+       "/",
+       cancer_types[i],
+       "_effect_difference_volcano_tp53_targets.pdf",
+       sep = ""
+     ),
+     dpi = 300,
+     width = 6,
+     height = 3.5,
+     units = "in"
+   )
     
       
       # plot cases where the effect difference between WT and Mut fall in ++ (tumor suppressor activity) and -- (synthetic lethal like) cases
@@ -665,7 +724,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
                             TRUE ~ "Other")
         ) |>
         group_by(group) |>
-        arrange(desc(depmap_crispr_effect_sub_results)) |>
+        arrange(desc(mean_difference)) |>
         mutate(
           order_number = row_number(),
           Gene_name = case_when(order_number <= 5 ~ Gene,
@@ -676,17 +735,17 @@ depmap_effect_enrichment_by_tp53_mutation <-
       ggplot(
         depmap_crispr_effect_sub_results,
         aes(
-          color = depmap_crispr_effect_sub_results,
+          color = mean_difference,
           reorder(
-            depmap_crispr_effect_sub_results,
-            depmap_crispr_effect_sub_results
+            mean_difference,
+            mean_difference
           ),
-          depmap_crispr_effect_sub_results,
+          mean_difference,
           label = Gene_name
         )
       ) +
         geom_point(size = .5) +
-        geom_bar(aes(fill = depmap_crispr_effect_sub_results), stat = "identity") +
+        geom_bar(aes(fill = mean_difference), stat = "identity") +
         scale_color_viridis(name = "Effect\ndifference") +
         scale_fill_viridis() +
         geom_label_repel() +
@@ -735,7 +794,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
       depmap_crispr_effect_sub_tp53_targets <-
         depmap_crispr_effect_sub_results |>
         subset(Gene %in% target_genes$`Gene Symbol`) |>
-        arrange(desc(depmap_crispr_effect_sub_results)) |>
+        arrange(desc(mean_difference)) |>
         mutate(
           order_number = row_number(),
           Gene_name = case_when(
@@ -748,17 +807,17 @@ depmap_effect_enrichment_by_tp53_mutation <-
       ggplot(
         depmap_crispr_effect_sub_tp53_targets,
         aes(
-          color = depmap_crispr_effect_sub_results,
+          color = mean_difference,
           reorder(
-            depmap_crispr_effect_sub_results,
-            depmap_crispr_effect_sub_results
+            mean_difference,
+            mean_difference
           ),
-          depmap_crispr_effect_sub_results,
+          mean_difference,
           label = Gene_name
         )
       ) +
         geom_point(size = 0.5) +
-        geom_bar(aes(fill = depmap_crispr_effect_sub_results), stat = "identity") +
+        geom_bar(aes(fill = mean_difference), stat = "identity") +
         scale_color_viridis(name = "Effect\ndifference") +
         scale_fill_viridis() +
         geom_label_repel() +
@@ -820,17 +879,17 @@ depmap_effect_enrichment_by_tp53_mutation <-
       ggplot(
         depmap_crispr_effect_sub_tp53_targets,
         aes(
-          color = depmap_crispr_effect_sub_results,
+          color = mean_difference,
           reorder(
-            depmap_crispr_effect_sub_results,
-            depmap_crispr_effect_sub_results
+            mean_difference,
+            mean_difference
           ),
-          depmap_crispr_effect_sub_results,
+          mean_difference,
           label = Gene_name
         )
       ) +
         geom_point(size = 0.5) +
-        geom_bar(aes(fill = depmap_crispr_effect_sub_results), stat = "identity") +
+        geom_bar(aes(fill = mean_difference), stat = "identity") +
         scale_color_viridis(name = "Effect\ndifference") +
         scale_fill_viridis() +
         geom_label_repel() +
@@ -1094,6 +1153,7 @@ depmap_deseq2_gsea_function <-
       units = "in"
     )
     
+    # DESeq2 ----
     # now perform the differential expression
     # need to subset the formatted gene expression file
     depmap_rna_count_deseq <- depmap_rna_count_t |>
@@ -1193,7 +1253,7 @@ depmap_deseq2_gsea_function <-
       ggtitle(paste(cancer_type, "\nTP53 WT vs Mut")) +
       theme(
         legend.title.align = 0.5,
-        legend.position = "top",
+        legend.position = "right",
         legend.justification = "center",
         plot.title = element_text(hjust = 0.5)
       ) +
@@ -1304,9 +1364,6 @@ depmap_deseq2_gsea_function <-
     )
     
     
-    
-    
-    
     # PCA plot
     #First we need to transform the raw count data
     vsdata_tp53 <-
@@ -1344,7 +1401,7 @@ depmap_deseq2_gsea_function <-
     )
     
     
-    # GSEA #
+    # GSEA ----
     # annotated hallmark pathways from MSigDB
     # randomize the ties
     genesTables_tp53 <- res_tp53 |>
@@ -1624,12 +1681,136 @@ depmap_deseq2_gsea_function <-
       )
     )
     
-  }
+    
+    
+    
+    # CRISPR + DESeq2 ----
+    # integrate CRISPR effect difference between Mut and WT lines with the differential expression scores
+    # to give one plot showing their relationship
+    
+    colnames(res_tp53)[colnames(res_tp53) == "row"] <- "Gene"
+      depmap_crispr_effect_sub_results
+    
+    joint_cripsr_deseq2 <- inner_join(res_tp53, depmap_crispr_effect_sub_results, by = "Gene")
+    
+    # order levels
+    joint_cripsr_deseq2$Significance = factor(joint_cripsr_deseq2$Significance,
+                                  levels = c("Middle 80%", "10th percentile"))
+    
+    # highlight significant effect differences
+    ggplot(joint_cripsr_deseq2, aes(log2FoldChange, mean_difference)) +
+      geom_vline(
+        xintercept = -1.5,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_vline(
+        xintercept = 1.5,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = 0.1,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = -0.1,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_point(aes(fill = mean_difference, alpha = Significance), shape = 21) +
+      scale_alpha_discrete(range = c(0.05, 1)) +
+      xlab(label = "log2 Fold Change (WT vs. Mut)") +
+      ylab("CRISPR effect difference (WT-Mut)") +
+      theme_cowplot() +
+      scale_fill_viridis(name = "Effect\ndifference") +
+      guides(alpha = guide_legend(override.aes = list(size = 3), title = "Effect score difference")) 
+    
+    ggsave(
+      filename = paste(
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+        cancer_types[i],
+        "/",
+        cancer_types[i],
+        "_crispr_deseq2_scatterplot_effect_differences_highlighted.pdf",
+        sep = ""
+      ),
+      dpi = 300,
+      width = 6,
+      height = 5,
+      units = "in"
+    )
+
+    
+    # tp53 targets highlighted
+    ggplot(joint_cripsr_deseq2, aes(log2FoldChange, mean_difference)) +
+      geom_vline(
+        xintercept = -1.5,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_vline(
+        xintercept = 1.5,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = 0.1,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = -0.1,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_point(aes(fill = mean_difference, alpha = label.x), shape = 21) +
+      scale_alpha_discrete(range = c(0.05, 1)) +
+      xlab(label = "log2 Fold Change (WT vs. Mut)") +
+      ylab("CRISPR effect difference (WT-Mut)") +
+      theme_cowplot() +
+      scale_fill_viridis(name = "Effect\ndifference") +
+      guides(alpha = guide_legend(override.aes = list(size = 3), title = "TP53 target gene")) 
+    
+    ggsave(
+      filename = paste(
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+        cancer_types[i],
+        "/",
+        cancer_types[i],
+        "_crispr_deseq2_scatterplot_tp53_targets.pdf",
+        sep = ""
+      ),
+      dpi = 300,
+      width = 6,
+      height = 5,
+      units = "in"
+    )
+    
+    
+   }
 
 depmap_deseq2_gsea_function(
   pan_cancer = "Yes",
   cancer_type = "AML",
-  genes_of_interest = c(tp53_target_genes$`Gene Symbol`)
+  genes_of_interest = c("ZMAT3", "CDKN1A")
 )
 
 
