@@ -649,6 +649,9 @@ depmap_effect_enrichment_by_tp53_mutation <-
    
    depmap_crispr_effect_sub_results$label <- factor(depmap_crispr_effect_sub_results$label, levels = c("Yes", "No"))
    
+   depmap_crispr_effect_sub_results <- depmap_crispr_effect_sub_results %>%
+     arrange(desc(label == "No"))
+   
    # make the volcano plot
    ggplot(depmap_crispr_effect_sub_results, aes(mean_difference,-log(fdr))) +
      geom_vline(
