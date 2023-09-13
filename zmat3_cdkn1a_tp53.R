@@ -548,47 +548,7 @@ depmap_effect_enrichment_by_tp53_mutation <-
             TRUE ~ "Middle 80%"
           )
         )
-   #    
-   #    depmap_crispr_effect_sub_results$Significance <- factor(depmap_crispr_effect_sub_results$Significance, levels = c("Middle 80%", "10th percentile"))
-   #    
-   #    # make the volcano plot
-   # ggplot(
-   #      depmap_crispr_effect_sub_results,
-   #      aes(mean_difference,-log(fdr),
-   #          fill = mean_difference            )
-   #    ) +
-   #    geom_vline(
-   #      xintercept = -.1,
-   #      slope = (0),
-   #      color = "lightgrey",
-   #      linetype = "dashed",
-   #      size = .5
-   #    ) +
-   #    geom_vline(
-   #      xintercept = .1,
-   #      slope = (0),
-   #      color = "lightgrey",
-   #      linetype = "dashed",
-   #      size = .5
-   #    ) +
-   #    geom_abline(
-   #      intercept = -log(0.05),
-   #      slope = (0),
-   #      color = "lightgrey",
-   #      linetype = "dashed",
-   #      size = .5
-   #    ) +
-   #      geom_point(aes(alpha = Significance, color = mean_difference)) +
-   #      scale_color_viridis(name = "Effect\ndifference") +
-   #      scale_fill_viridis() +
-   #      theme_cowplot() +
-   #      ylab("-log(FDR)") +
-   #      xlab("Mean effect difference (WT-Mut)") +
-   #   guides(alpha = guide_legend(override.aes = list(size = 3), title = NULL),
-   #          fill = FALSE)
-   #    
-   
-   #----
+
    # plot the results as a volcano plot
    depmap_crispr_effect_sub_results$Significance <- factor(depmap_crispr_effect_sub_results$Significance, levels = c("10th percentile", "Middle 80%"))
    
@@ -622,7 +582,6 @@ depmap_effect_enrichment_by_tp53_mutation <-
      scale_fill_viridis(name = "Effect\ndifference") +
      guides(alpha = guide_legend(override.aes = list(size = 3), title = NULL))
    
-   #----
    ggsave(
      filename = paste(
        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
@@ -682,7 +641,6 @@ depmap_effect_enrichment_by_tp53_mutation <-
      theme_cowplot() +
      scale_fill_viridis(name = "Effect\ndifference") +
      guides(alpha = guide_legend(order = 1, override.aes = list(size = 3), title = "p53 target gene"))
-   
    
    ggsave(
      filename = paste(
@@ -1808,6 +1766,67 @@ depmap_deseq2_gsea_function <-
     )
     
     
+    mean_groups <- 
+      depmap_crispr_effect_sub_results |>
+      select(Gene, group)
+    
+    joint_cripsr_deseq2 <- left_join(joint_cripsr_deseq2, mean_groups, by = "Gene")
+    
+    # visiualized by mean groups
+    # tp53 targets highlighted
+    ggplot(joint_cripsr_deseq2, aes(log2FoldChange, mean_difference)) +
+      geom_vline(
+        xintercept = -1.5,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_vline(
+        xintercept = 1.5,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = 0.1,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_abline(
+        intercept = -0.1,
+        slope = (0),
+        color = "lightgrey",
+        linetype = "dashed",
+        size = .5
+      ) +
+      geom_point(aes(fill = mean_difference, alpha = label.x), shape = 21) +
+      scale_alpha_discrete(range = c(0.05, 1)) +
+      xlab(label = "log2 Fold Change (WT vs. Mut)") +
+      ylab("CRISPR effect difference (WT-Mut)") +
+      theme_cowplot() +
+      scale_fill_viridis(name = "Effect\ndifference") +
+      facet_wrap(~ group, nrow = 3) +
+      guides(alpha = guide_legend(override.aes = list(size = 3), title = "TP53 target gene"))
+    
+    ggsave(
+      filename = paste(
+        "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
+        cancer_types[i],
+        "/",
+        cancer_types[i],
+        "_crispr_deseq2_scatterplot_tp53_targets_mean_groups.pdf",
+        sep = ""
+      ),
+      dpi = 300,
+      width = 6,
+      height = 5,
+      units = "in"
+    )
+    
    }
 
 depmap_deseq2_gsea_function(
@@ -1815,146 +1834,3 @@ depmap_deseq2_gsea_function(
   cancer_type = "AML",
   genes_of_interest = c("ZMAT3", "CDKN1A")
 )
-
-
-
-#
-# metaData_all
-#
-# names <- left_join(metaData_all, depmap_cell_line_names, by = "ProfileID")
-#
-# names <- subset(names, names$tp53_status == "Mut")
-#
-# sub_data_ranked <- sub_data_ranked |>
-#   mutate(tp53_status = case_when(
-#     ModelID %in% names$ModelID ~ "TP53 Mut",
-#     TRUE ~ "TP53 WT"
-#   )) |>
-#   mutate(tp53_status = fct_relevel(tp53_status, c("TP53 WT", "TP53 Mut")))
-#
-# # plot the difference between effect scores in mut and wt across each cancer type
-# ggboxplot(
-#   sub_data_ranked,
-#   x = "tp53_status",
-#   y = "ZMAT3",
-#   color = "tp53_status",
-#   palette = c("#b2182b", "#2166ac"),
-#   add = "jitter"
-# ) +
-#   stat_compare_means(aes(label = ..p.signif..),
-#                      size = 3,
-#                      label.x = 1.5,
-#                      label.y = 0.5) +
-#   ylab("Gene Effect Score") +
-#   xlab(NULL) +
-#   ggtitle("ZMAT3 Effect Difference") +
-#   theme(plot.title = element_text(hjust = 0.5),
-#         axis.text.x = element_blank(),
-#         axis.ticks.x = element_blank()) +
-#   facet_wrap( ~ DepmapModelType, ncol = 20)
-#
-# ggsave(
-#   filename = "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/ZMAT3_effect_detailed/expression_difference_boxplot.pdf",
-#   dpi = 300,
-#   width = 20,
-#   height = 10,
-#   units = "in"
-# )
-#
-# sub_data_ranked <- sub_data_ranked |>
-#   group_by(DepmapModelType) |>
-#
-#
-#
-#
-#   p1 <-
-#   ggplot(sub_data_ranked, aes(reorder(ModelID, -sub_data_ranked[, gene_column]), sub_data_ranked[, gene_column])) +
-#   geom_bar(aes(fill = sub_data_ranked[, gene_column]), stat = "identity") +
-#   scale_color_viridis(
-#     option = "viridis",
-#     direction = -1,
-#     name = paste(genes_of_interest[i], "effect score", sep = "")
-#   ) +
-#   scale_fill_viridis(
-#     option = "viridis",
-#     direction = -1,
-#     name = paste(genes_of_interest[i], "effect score", sep = " ")
-#   ) +
-#   theme(
-#     plot.background = element_rect(fill = "white"),
-#     panel.background = element_rect(fill = 'white'),
-#     axis.text.x = element_blank(),
-#     axis.ticks.x = element_blank(),
-#     plot.title = element_text(hjust = 0.5)
-#   ) +
-#   labs(
-#     title = paste(genes_of_interest[i], "dependency distribution", sep = " "),
-#     x = "Cell line rank order\n<- less dependent lines | more dependent lines ->",
-#     y = "Gene Effect Score"
-#   ) +
-#   facet_wrap(~tp53_status, ncol = 1)
-#
-# p_dist_ident <-
-#   ggplot(sub_data_ranked, aes(reorder(ModelID, -sub_data_ranked[, gene_column]), sub_data_ranked[, gene_column])) +
-#   geom_bar(aes(fill = OncotreeLineage), stat = "identity") +
-#   theme(
-#     plot.background = element_rect(fill = "white"),
-#     panel.background = element_rect(fill = 'white'),
-#     axis.text.x = element_blank(),
-#     axis.ticks.x = element_blank(),
-#     plot.title = element_text(hjust = 0.5),
-#     legend.title.align = 0.5
-#   ) +
-#   labs(
-#     title = paste(genes_of_interest[i], "dependency distribution", sep = " "),
-#     x = "Cell line rank order\n<- less dependent lines | more dependent lines ->",
-#     y = "Gene Effect Score"
-#   ) +
-#   guides(
-#     fill = guide_legend(
-#       title = "Tissue"
-#     )
-#   )+
-#   facet_wrap(~tp53_status, ncol = 1)
-#
-# # save plots
-# # dependency distribution
-# ggsave(
-#   plot = p1,
-#   filename = paste(
-#     "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
-#     paste(genes_of_interest[i]),
-#     "_effect_difference_waterfall_tp53_Status.pdf",
-#     sep = ""
-#   ),
-#   dpi = 300,
-#   width = 10,
-#   height = 5,
-#   units = "in"
-# )
-#
-# # dependeicy distribution colored by type of tissue
-# ggsave(
-#   plot = p_dist_ident,
-#   filename = paste(
-#     "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
-#     paste(genes_of_interest[i]),
-#     "_effect_difference_waterfall_tp53_status_tissue_type.pdf",
-#     sep = ""
-#   ),
-#   dpi = 300,
-#   width = 10,
-#   height = 5,
-#   units = "in"
-# )
-#
-# # save plot data
-# write.csv(
-#   sub_data_ranked,
-#   file = paste(
-#     "~/Library/CloudStorage/Box-Box/Brooks Benard's Files/ZMAT3_CDKN1A_TP53/results/",
-#     paste(genes_of_interest[i]),
-#     "_effect_score_tp53_status_tissue_type.csv",
-#     sep = ""
-#   )
-# )
